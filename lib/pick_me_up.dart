@@ -6,6 +6,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:get/get.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:pick_me_up/controller/pick_me_up_controller.dart';
+import 'package:pick_me_up/widgets/select_image_source.dart';
 
 class PickMeUp extends StatefulWidget {
   /// index refers to the key in case of multiple images/files selection
@@ -43,8 +44,14 @@ class PickMeUp extends StatefulWidget {
   /// image fit type
   final BoxFit? fitType;
 
-  /// callbacks corresponding to file selections
+  /// callback corresponding to file selections
   final ValueChanged<Map<int, XFile?>>? onFileSelected;
+
+  /// quality of the image, defaults to 50%
+  final int? imageQuality;
+
+  /// title of image source selection
+  final Widget? title;
 
   const PickMeUp({
     required this.imagePath,
@@ -59,15 +66,19 @@ class PickMeUp extends StatefulWidget {
     this.uploadButtonTextColor = Colors.black,
     this.fitType = BoxFit.contain,
     this.onFileSelected,
+    this.imageQuality = 50,
+    this.title,
     super.key,
   });
 
   @override
-  State<PickMeUp> createState() => _UploadImageWidgetState();
+  State<PickMeUp> createState() => _PickMeUpState();
 }
 
-class _UploadImageWidgetState extends State<PickMeUp> {
-  final _pickMeUpController = Get.put<PickMeUpController>(PickMeUpController());
+class _PickMeUpState extends State<PickMeUp> {
+  final PickMeUpController _pickMeUpController = Get.put<PickMeUpController>(
+    PickMeUpController(),
+  );
 
   @override
   void initState() {
@@ -109,16 +120,24 @@ class _UploadImageWidgetState extends State<PickMeUp> {
                       backgroundColor: Colors.transparent,
                     ),
                     onPressed: () async {
-                      bool permissionStatus =
-                          await _pickMeUpController.getPermission(
-                        source: ImageSource.camera,
+                      showDialog(
+                        context: context,
+                        builder: (_) {
+                          return SelectImageSource(
+                            index: widget.index,
+                            imageQuality: widget.imageQuality,
+                            title: widget.title ??
+                                const Text(
+                                  'Select an image source',
+                                  style: TextStyle(
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                  textAlign: TextAlign.center,
+                                ),
+                          );
+                        },
                       );
-                      if (permissionStatus) {
-                        _pickMeUpController.pickImage(
-                          source: ImageSource.camera,
-                          index: widget.index,
-                        );
-                      }
                     },
                     icon: widget.uploadButtonIcon ??
                         const Icon(
@@ -152,8 +171,8 @@ class _UploadImageWidgetState extends State<PickMeUp> {
                     ),
                   ),
                   GestureDetector(
-                    onTap: () => _pickMeUpController
-                        .clearSelectedImage(widget.index ?? 1),
+                    onTap: () =>
+                        _pickMeUpController.clearSelectedImage(widget.index),
                     child: CircleAvatar(
                       radius: 12,
                       backgroundColor: Colors.grey.shade400,

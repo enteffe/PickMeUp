@@ -49,26 +49,28 @@ class PickMeUpController extends GetxController {
   }
 
   Future<bool> getPermission({ImageSource source = ImageSource.gallery}) async {
-    if (source == ImageSource.camera) {
-      final PermissionStatus status = await Permission.camera.request();
-      return _checkPermissionStatus(status: status);
-    } else if (source == ImageSource.gallery) {
-      final PermissionStatus status = await Permission.photos.request();
-      return _checkPermissionStatus(status: status);
-    } else {
-      return false;
-    }
+    final PermissionStatus status = source == ImageSource.camera
+        ? await Permission.camera.request()
+        : await Permission.photos.request();
+
+    return _checkPermissionStatus(status: status);
   }
 
   Future<void> pickImage({
     required int index,
     ImageSource source = ImageSource.gallery,
+    int? imageQuality,
   }) async {
     try {
       if (permissionStatus == PermissionStatus.granted) {
-        final pickedImage = await picker.pickImage(source: source);
+        final pickedImage = await picker.pickImage(
+          source: source,
+          imageQuality: imageQuality,
+        );
         if (pickedImage != null) {
-          _selectedImages[index] = pickedImage;
+          _selectedImages.addAll({
+            index: pickedImage,
+          });
           onFileSelected?.call(selectedImages);
         } else {
           debugPrint('No image selected');
