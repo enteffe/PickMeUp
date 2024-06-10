@@ -51,7 +51,7 @@ class PickMeUpController extends GetxController {
   Future<bool> getPermission({ImageSource source = ImageSource.gallery}) async {
     final PermissionStatus status = source == ImageSource.camera
         ? await Permission.camera.request()
-        : await Permission.photos.request();
+        : await Permission.mediaLibrary.request();
 
     return _checkPermissionStatus(status: status);
   }
