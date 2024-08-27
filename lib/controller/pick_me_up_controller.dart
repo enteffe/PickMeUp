@@ -4,9 +4,11 @@ import 'package:image_picker/image_picker.dart';
 import 'package:permission_handler/permission_handler.dart';
 
 class PickMeUpController extends GetxController {
+
   final picker = ImagePicker();
 
   ValueChanged<Map<int, XFile?>>? onFileSelected;
+
 
   final RxMap<int, XFile?> _selectedImages = RxMap<int, XFile?>();
   Map<int, XFile?> get selectedImages => _selectedImages;
@@ -14,7 +16,7 @@ class PickMeUpController extends GetxController {
   final Rx<PermissionStatus> _permissionStatus = PermissionStatus.denied.obs;
   PermissionStatus get permissionStatus => _permissionStatus.value;
 
-  void clearSelectedImage([int index = 1]) {
+  clearSelectedImage([int index = 1]) {
     _selectedImages.removeWhere((key, value) => key == index);
     onFileSelected?.call(selectedImages);
   }
@@ -38,7 +40,7 @@ class PickMeUpController extends GetxController {
         // TODO: Handle this case.
         return false;
       case PermissionStatus.permanentlyDenied:
-        debugPrint('Permissions Restricted');
+        debugPrint('Permissions Denied');
         _permissionStatus.value = PermissionStatus.permanentlyDenied;
         openAppSettings();
         return false;
