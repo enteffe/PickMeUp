@@ -9,42 +9,42 @@ import 'package:pick_me_up/controller/pick_me_up_controller.dart';
 import 'package:pick_me_up/widgets/select_image_source.dart';
 
 class PickMeUp extends StatefulWidget {
-  /// index refers to the key in case of multiple images/files selection
+  /// Index refers to the key in case of multiple images/files selection
   /// defaults to 1
   final int index;
 
-  /// image to be shown above the button
+  /// Image to be shown above the button
   final String imagePath;
 
-  /// width
+  /// Width
   final double width;
 
-  /// height
+  /// Height
   final double height;
 
-  /// border radius of selection container/image
-  /// defaults to 8
+  /// Border radius of selection container/image
+  /// Defaults to 8
   final double borderRadius;
 
-  /// border color
+  /// Border color
   final Color? borderColor;
 
-  /// button text
+  /// Button text
   final String? uploadButtonText;
 
-  /// button's textstyle
+  /// Button's Text-Style
   final TextStyle? uploadButtonTextStyle;
 
-  /// leading button icon
+  /// Leading button icon
   final Icon? uploadButtonIcon;
 
-  /// button text color
+  /// Button text color
   final Color? uploadButtonTextColor;
 
-  /// image fit type
+  /// Image fit type
   final BoxFit? fitType;
 
-  /// callback corresponding to file selections
+  /// Callback corresponding to file selections
   final ValueChanged<Map<int, XFile?>>? onFileSelected;
 
   /// quality of the image, defaults to 50%
@@ -52,6 +52,12 @@ class PickMeUp extends StatefulWidget {
 
   /// title of image source selection
   final Widget? title;
+
+  final BoxShape? boxShape;
+
+  final Widget? uploadedChild;
+
+  final Widget? uploadingChild;
 
   const PickMeUp({
     required this.imagePath,
@@ -68,6 +74,9 @@ class PickMeUp extends StatefulWidget {
     this.onFileSelected,
     this.imageQuality = 50,
     this.title,
+    this.uploadedChild,
+    this.uploadingChild,
+    this.boxShape,
     super.key,
   });
 
@@ -76,19 +85,19 @@ class PickMeUp extends StatefulWidget {
 }
 
 class _PickMeUpState extends State<PickMeUp> {
-  final PickMeUpController _pickMeUpController = Get.put<PickMeUpController>(
+  final PickMeUpController pickMeUpController = Get.put<PickMeUpController>(
     PickMeUpController(),
   );
 
   @override
   void initState() {
     super.initState();
-    _pickMeUpController.onFileSelected = widget.onFileSelected;
+    pickMeUpController.onFileSelected = widget.onFileSelected;
   }
 
   @override
   void dispose() {
-    _pickMeUpController.clearSelectedImage(widget.index);
+    pickMeUpController.clearSelectedImage(widget.index);
     super.dispose();
   }
 
@@ -96,6 +105,7 @@ class _PickMeUpState extends State<PickMeUp> {
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
+        shape: widget.boxShape ?? BoxShape.rectangle,
         border: Border.all(
           color: widget.borderColor ?? Colors.grey.shade300,
         ),
@@ -106,85 +116,89 @@ class _PickMeUpState extends State<PickMeUp> {
       width: widget.width,
       height: widget.height,
       child: Obx(
-        () => (!_pickMeUpController.selectedImages.containsKey(widget.index))
-            ? Column(
-                children: [
-                  const SizedBox(height: 16),
-                  SvgPicture.asset(
-                    widget.imagePath,
-                  ),
-                  const SizedBox(height: 12),
-                  ElevatedButton.icon(
-                    style: ElevatedButton.styleFrom(
-                      elevation: 0,
-                      backgroundColor: Colors.transparent,
-                    ),
-                    onPressed: () async {
-                      showDialog(
-                        context: context,
-                        builder: (_) {
-                          return SelectImageSource(
-                            index: widget.index,
-                            imageQuality: widget.imageQuality,
-                            title: widget.title ??
-                                const Text(
-                                  'Select an image source',
-                                  style: TextStyle(
-                                    fontSize: 18,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                  textAlign: TextAlign.center,
-                                ),
+        () => (!pickMeUpController.selectedImages.containsKey(widget.index))
+            ? (widget.uploadingChild != null)
+                ? (widget.uploadingChild ?? const SizedBox())
+                : Column(
+                    children: [
+                      const SizedBox(height: 16),
+                      SvgPicture.asset(
+                        widget.imagePath,
+                      ),
+                      const SizedBox(height: 12),
+                      ElevatedButton.icon(
+                        style: ElevatedButton.styleFrom(
+                          elevation: 0,
+                          backgroundColor: Colors.transparent,
+                        ),
+                        onPressed: () async {
+                          showDialog(
+                            context: context,
+                            builder: (_) {
+                              return SelectImageSource(
+                                index: widget.index,
+                                imageQuality: widget.imageQuality,
+                                title: widget.title ??
+                                    const Text(
+                                      'Select an image source',
+                                      style: TextStyle(
+                                        fontSize: 18,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                      textAlign: TextAlign.center,
+                                    ),
+                              );
+                            },
                           );
                         },
-                      );
-                    },
-                    icon: widget.uploadButtonIcon ??
-                        const Icon(
-                          Icons.add_circle_outline,
-                          size: 24,
+                        icon: widget.uploadButtonIcon ??
+                            const Icon(
+                              Icons.add_circle_outline,
+                              size: 24,
+                            ),
+                        label: Text(
+                          widget.uploadButtonText ?? 'Upload Image',
+                          textAlign: TextAlign.center,
+                          style: widget.uploadButtonTextStyle,
                         ),
-                    label: Text(
-                      widget.uploadButtonText ?? 'Upload Image',
-                      textAlign: TextAlign.center,
-                      style: widget.uploadButtonTextStyle,
-                    ),
-                  ),
-                ],
-              )
-            : Stack(
-                alignment: Alignment.topRight,
-                children: [
-                  ClipRRect(
-                    borderRadius: BorderRadius.all(
-                      Radius.circular(widget.borderRadius),
-                    ),
-                    child: Image.file(
-                      File(
-                        _pickMeUpController
-                                .selectedImages[widget.index]?.path ??
-                            '',
                       ),
-                      height: widget.height,
-                      width: widget.width,
-                      fit: widget.fitType,
-                    ),
-                  ),
-                  GestureDetector(
-                    onTap: () =>
-                        _pickMeUpController.clearSelectedImage(widget.index),
-                    child: CircleAvatar(
-                      radius: 12,
-                      backgroundColor: Colors.grey.shade400,
-                      child: const Icon(
-                        Icons.clear,
-                        color: Colors.black,
-                        size: 14,
-                      ),
-                    ),
+                    ],
                   )
-                ],
-              ),
+            : (widget.uploadedChild != null)
+                ? (widget.uploadedChild ?? const SizedBox())
+                : Stack(
+                    alignment: Alignment.topRight,
+                    children: [
+                      ClipRRect(
+                        borderRadius: BorderRadius.all(
+                          Radius.circular(widget.borderRadius),
+                        ),
+                        child: Image.file(
+                          File(
+                            pickMeUpController
+                                    .selectedImages[widget.index]?.path ??
+                                '',
+                          ),
+                          height: widget.height,
+                          width: widget.width,
+                          fit: widget.fitType,
+                        ),
+                      ),
+                      GestureDetector(
+                        onTap: () =>
+                            pickMeUpController.clearSelectedImage(widget.index),
+                        child: CircleAvatar(
+                          radius: 12,
+                          backgroundColor: Colors.grey.shade400,
+                          child: const Icon(
+                            Icons.clear,
+                            color: Colors.black,
+                            size: 14,
+                          ),
+                        ),
+                      )
+                    ],
+                  ),
       ),
     );
   }
