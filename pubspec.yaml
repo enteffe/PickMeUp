@@ -13,7 +13,7 @@ dependencies:
   flutter_svg: ^2.0.5
   get: ^4.6.5
   image_picker: ^1.0.4
-  permission_handler: ^11.0.1
+  permission_handler: ^12.0.1
 
 dev_dependencies:
   flutter_test:
