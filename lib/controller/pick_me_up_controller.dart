@@ -4,11 +4,9 @@ import 'package:image_picker/image_picker.dart';
 import 'package:permission_handler/permission_handler.dart';
 
 class PickMeUpController extends GetxController {
-
   final picker = ImagePicker();
 
   ValueChanged<Map<int, XFile?>>? onFileSelected;
-
 
   final RxMap<int, XFile?> _selectedImages = RxMap<int, XFile?>();
   Map<int, XFile?> get selectedImages => _selectedImages;
@@ -21,31 +19,62 @@ class PickMeUpController extends GetxController {
     onFileSelected?.call(selectedImages);
   }
 
-  bool _checkPermissionStatus({required PermissionStatus status}) {
+  // ===================================================================
+  // DIALOG INSIDE CONTROLLER (App Store Safe)
+  // ===================================================================
+  Future<void> showPermissionDialog({
+    required String title,
+    required String message,
+  }) async {
+    await Get.dialog(
+      AlertDialog(
+        title: Text(title),
+        content: Text(message),
+        actions: [
+          TextButton(
+            child: const Text("Not Now"),
+            onPressed: () => Get.back(),
+          ),
+          TextButton(
+            child: const Text("Open Settings"),
+            onPressed: () {
+              Get.back();
+              openAppSettings(); // User-initiated – App Store compliant
+            },
+          ),
+        ],
+      ),
+      barrierDismissible: true,
+    );
+  }
+
+  // ===================================================================
+  // Permission Check
+  // ===================================================================
+  bool _checkPermissionStatus(PermissionStatus status) {
+    _permissionStatus.value = status;
+
     switch (status) {
+      case PermissionStatus.granted:
+        return true;
+
       case PermissionStatus.denied:
         debugPrint('Permission Denied');
-        _permissionStatus.value = PermissionStatus.denied;
         return false;
-      case PermissionStatus.granted:
-        debugPrint('Permission Granted');
-        _permissionStatus.value = PermissionStatus.granted;
-        return true;
+
       case PermissionStatus.restricted:
-        debugPrint('Permissions Restricted');
-        _permissionStatus.value = PermissionStatus.restricted;
-        openAppSettings();
+        debugPrint('Permission Restricted');
         return false;
-      case PermissionStatus.limited:
-        // TODO: Handle this case.
-        return false;
+
       case PermissionStatus.permanentlyDenied:
-        debugPrint('Permissions Denied');
-        _permissionStatus.value = PermissionStatus.permanentlyDenied;
-        openAppSettings();
+        debugPrint('Permission Permanently Denied');
         return false;
+
+      case PermissionStatus.limited:
+        debugPrint('Limited Access Granted');
+        return true;
+
       case PermissionStatus.provisional:
-        // TODO: Handle this case.
         return false;
     }
   }
@@ -55,35 +84,43 @@ class PickMeUpController extends GetxController {
         ? await Permission.camera.request()
         : await Permission.mediaLibrary.request();
 
-    return _checkPermissionStatus(status: status);
+    return _checkPermissionStatus(status);
   }
 
+  // ===================================================================
+  // Main Image Picker
+  // ===================================================================
   Future<void> pickImage({
     required int index,
     ImageSource source = ImageSource.gallery,
     int? imageQuality,
   }) async {
     try {
-      if (permissionStatus == PermissionStatus.granted) {
-        final pickedImage = await picker.pickImage(
-          source: source,
-          imageQuality: imageQuality,
+      final allowed = await getPermission(source: source);
+
+      if (!allowed) {
+        await showPermissionDialog(
+          title: "Access Needed",
+          message:
+              "This feature requires permission. You can still use the app, "
+              "or enable access from Settings to continue.",
         );
-        if (pickedImage != null) {
-          _selectedImages.addAll({
-            index: pickedImage,
-          });
-          onFileSelected?.call(selectedImages);
-        } else {
-          debugPrint('No image selected');
-        }
+        return;
+      }
+
+      final pickedImage = await picker.pickImage(
+        source: source,
+        imageQuality: imageQuality,
+      );
+
+      if (pickedImage != null) {
+        _selectedImages[index] = pickedImage;
+        onFileSelected?.call(selectedImages);
       } else {
-        debugPrint(
-          'Permission denied. Please grant access to camera and photos.',
-        );
+        debugPrint('No image selected');
       }
     } catch (error) {
-      debugPrint('Error while selecting the image-> ${error.toString()}');
+      debugPrint('Error while selecting the image -> $error');
     }
   }
 }
